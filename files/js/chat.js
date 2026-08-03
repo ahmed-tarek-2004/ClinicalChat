@@ -21,11 +21,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (currentUser.email === "admin@gmail.com") {
         // لو اللي فاتح هو الأدمن، هيبعت لليوزر ده (حط الـ ID بتاع اليوزر هنا)
-        targetUserId = "3e3860ef-0b44-4342-b163-e654b3f7773f"; 
+        targetUserId = "f0b60c72-fba9-4779-a6d3-a330fca61574"; 
         
     } else if (currentUser.email === "user@gmail.com") {
         // لو اللي فاتح هو اليوزر العادي، هيبعت للأدمن (حط الـ ID بتاع الأدمن هنا)
-        targetUserId = "6c617bf3-e7d1-4e72-9ba9-5904b6d260c9";
+        targetUserId = "d18e424f-9ebd-411c-93e2-e40b3ce7722f";
     }
     // ==========================================
 
