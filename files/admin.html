@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>لوحة الأدمن - TechMeter Chat</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="chat-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div>
+          <div class="brand"><span>TechMeter</span></div>
+          <div class="me" id="meLabel"></div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">خروج</button>
+      </div>
+      <div class="user-list" id="userList">
+        <div class="empty-list">جارٍ تحميل المستخدمين...</div>
+      </div>
+    </aside>
+
+    <main class="conversation" id="conversation">
+      <div class="no-conversation">اختر مستخدمًا من القائمة لبدء أو متابعة المحادثة</div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/chat-hub.js"></script>
+  <script>
+    const me = Auth.guard(true); // must be a logged-in admin
+    if (me) {
+      document.getElementById("meLabel").textContent = me.userName || me.id;
+    }
+    document.getElementById("logoutBtn").addEventListener("click", () => Auth.logout());
+
+    const userListEl = document.getElementById("userList");
+    const conversationEl = document.getElementById("conversation");
+
+    // Per-user client-side state: history, unread count, online flag.
+    const usersById = new Map();
+    let activeUserId = null;
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str ?? "";
+      return div.innerHTML;
+    }
+    function formatTime(iso) {
+      try { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+      catch { return ""; }
+    }
+    function initials(name) {
+      return (name || "?").trim().charAt(0).toUpperCase();
+    }
+
+    async function loadUsers() {
+      let users = [];
+      try {
+        // Assumes GET /api/users -> [{ id, userName }]
+        users = (await Api.getUsers()) || [];
+      } catch (e) {
+        console.warn("Could not load user list from API.", e);
+      }
+
+      if (!users.length) {
+        userListEl.innerHTML = `<div class="empty-list">لا يوجد مستخدمون بعد، أو تعذر تحميل القائمة من /api/users</div>`;
+        return;
+      }
+
+      users.forEach((u) => {
+        usersById.set(u.id, {
+          id: u.id,
+          userName: u.userName || u.id,
+          online: false,
+          unread: 0,
+          messages: [],
+          historyLoaded: false,
+        });
+      });
+
+      renderUserList();
+    }
+
+    function renderUserList() {
+      userListEl.innerHTML = "";
+      usersById.forEach((u) => {
+        const row = document.createElement("div");
+        row.className = "user-row" + (u.id === activeUserId ? " active" : "");
+        row.dataset.userId = u.id;
+        row.innerHTML = `
+          <div class="avatar">${initials(u.userName)}
+            <span class="status-dot ${u.online ? "online" : ""}"></span>
+          </div>
+          <div class="user-row-info">
+            <div class="user-row-name">${escapeHtml(u.userName)}</div>
+            <div class="user-row-sub">${u.online ? "متصل الآن" : "غير متصل"}</div>
+          </div>
+          ${u.unread > 0 ? `<div class="unread-badge">${u.unread}</div>` : ""}
+        `;
+        row.addEventListener("click", () => selectUser(u.id));
+        userListEl.appendChild(row);
+      });
+    }
+
+    async function selectUser(userId) {
+      activeUserId = userId;
+      const u = usersById.get(userId);
+      u.unread = 0;
+      renderUserList();
+      renderConversation(u);
+
+      if (!u.historyLoaded) {
+        try {
+          const history = await Api.getHistory(userId);
+          u.messages = (history || []).map((m) => ({
+            id: m.id,
+            content: m.content,
+            sentAt: m.sentAt,
+            mine: m.senderId === me.id,
+          }));
+          u.historyLoaded = true;
+        } catch (e) {
+          console.warn("Could not load history for user", userId, e);
+        }
+        renderMessages(u);
+      }
+
+      try {
+        const online = await ChatHub.isOnline(userId);
+        u.online = !!online;
+        renderUserList();
+        renderConversation(u);
+      } catch (e) { /* ignore */ }
+    }
+
+    function renderConversation(u) {
+      conversationEl.innerHTML = `
+        <div class="conv-header">
+          <div>
+            <div class="title">${escapeHtml(u.userName)}</div>
+            <div class="status"><span class="dot ${u.online ? "online" : ""}"></span>${u.online ? "متصل الآن" : "غير متصل"}</div>
+          </div>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="composer">
+          <textarea id="msgInput" rows="1" placeholder="اكتب ردك..."></textarea>
+          <button class="send-btn" id="sendBtn">إرسال</button>
+        </div>
+      `;
+      renderMessages(u);
+
+      const sendBtn = document.getElementById("sendBtn");
+      const msgInput = document.getElementById("msgInput");
+      function send() {
+        const text = msgInput.value.trim();
+        if (!text) return;
+        ChatHub.sendMessage(text, u.id)
+          .then(() => {
+            u.messages.push({ content: text, sentAt: new Date().toISOString(), mine: true });
+            if (activeUserId === u.id) renderMessages(u);
+            msgInput.value = "";
+          })
+          .catch((err) => console.error("Send failed", err));
+      }
+      sendBtn.addEventListener("click", send);
+      msgInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          send();
+        }
+      });
+    }
+
+    function renderMessages(u) {
+      if (activeUserId !== u.id) return;
+      const messagesEl = document.getElementById("messages");
+      if (!messagesEl) return;
+      messagesEl.innerHTML = "";
+      u.messages.forEach((m) => {
+        const row = document.createElement("div");
+        row.className = "msg-row" + (m.mine ? " mine" : "");
+        row.dataset.id = m.id ?? "";
+        row.innerHTML = `<div class="bubble">${escapeHtml(m.content)}<span class="meta">${formatTime(m.sentAt)}</span></div>`;
+        messagesEl.appendChild(row);
+      });
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // ---- SignalR events ----
+    ChatHub.on("onReceiveMessage", (payload) => {
+      const content = payload.content ?? payload.Content;
+      const sentAt = payload.sentAt ?? payload.SentAt;
+      const id = payload.id ?? payload.Id;
+      const sender = payload.sender ?? payload.Sender ?? {};
+      const senderId = sender.senderId ?? sender.SenderId ?? sender.id;
+      const senderName = sender.senderName ?? sender.SenderName ?? senderId;
+
+      if (!senderId) return;
+
+      if (!usersById.has(senderId)) {
+        // A user who wasn't in the initial list messaged us - add them on the fly.
+        usersById.set(senderId, {
+          id: senderId,
+          userName: senderName || senderId,
+          online: true,
+          unread: 0,
+          messages: [],
+          historyLoaded: true,
+        });
+      }
+
+      const u = usersById.get(senderId);
+      u.messages.push({ id, content, sentAt, mine: false });
+
+      if (activeUserId === senderId) {
+        renderMessages(u);
+        ChatHub.markAsRead(id, senderId).catch(() => {});
+      } else {
+        u.unread += 1;
+      }
+      renderUserList();
+    });
+
+    ChatHub.on("onCheckReceiverAvailability", (isOnline) => {
+      // Response to our own isonline() calls, handled inline in selectUser().
+    });
+
+    ChatHub.on("onIsRead", () => { /* update read receipts here if needed */ });
+
+    ChatHub.on("onReconnected", () => {
+      usersById.forEach((u) => {
+        ChatHub.isOnline(u.id).then((online) => {
+          u.online = !!online;
+          renderUserList();
+        }).catch(() => {});
+      });
+    });
+
+    (async function init() {
+      await loadUsers();
+      try {
+        await ChatHub.start();
+      } catch (e) {
+        console.error("SignalR connection failed", e);
+      }
+    })();
+  </script>
+</body>
+</html>

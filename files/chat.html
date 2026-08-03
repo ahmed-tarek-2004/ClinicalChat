@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الدردشة</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+    <div class="chat-wrapper">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h3 id="chatWith">جاري التحميل...</h3>
+                <button id="logoutBtn" class="logout-btn">تسجيل الخروج</button>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <!-- الرسائل ستظهر هنا -->
+            </div>
+
+            <form class="chat-input-area" id="chatForm">
+                <input type="text" id="messageInput" placeholder="اكتب رسالتك هنا..." required autocomplete="off">
+                <button type="submit">إرسال</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- مكتبة SignalR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    
+    <!-- ملفاتك -->
+    <script src="./js/config.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/chat.js"></script>
+</body>
+</html>
