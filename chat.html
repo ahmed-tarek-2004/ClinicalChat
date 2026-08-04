@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المحادثة</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <style>
+        /* ==========================================
+           تحسينات تصميم صفحة المحادثة (Modern UI)
+           ========================================== */
+        .chat-container {
+            height: 92vh;
+            max-width: 1000px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            background: #ffffff;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* الهيدر العلوي */
+        .chat-header {
+            background: #ffffff;
+            padding: 15px 25px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+        }
+
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+        }
+
+        .header-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary2));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.4rem;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        #chatWith {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* منطقة الرسائل والخلفية - شكل جديد ومريح */
+        .chat-messages {
+            flex: 1;
+            /* تدرج لوني ناعم جداً من الأعلى للأسفل يجمع بين الأبيض والأخضر الفاتح */
+            background: linear-gradient(180deg, #f8fafc 0%, #ecfdf5 100%);
+            padding: 25px;
+            gap: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* تنسيق الـ Scrollbar */
+        .chat-messages::-webkit-scrollbar { width: 8px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        /* فقاعات الرسائل - حواف دائرية أكثر نعومة وتأثير ظل احترافي */
+        .message {
+            max-width: 75%;
+            animation: fadeIn 0.4s ease forwards;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-content {
+            padding: 16px 20px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); /* ظل أنعم وأوسع يبرز الرسالة */
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        /* الرسائل المستقبلة (الطرف الآخر) - أبيض ناصع مع حد خفيف */
+        .message.received { align-self: flex-end; }
+        .message.received .message-content {
+            background: #ffffff;
+            color: #1e293b;
+            /* انحناء دائري كبير من 3 اتجاهات وزاوية حادة قليلاً من الأسفل */
+            border-radius: 24px 24px 24px 6px; 
+            border: 1px solid rgba(226, 232, 240, 0.8); /* حد (Border) شفاف وناعم */
+        }
+
+        /* الرسائل المرسلة (أنا) - تدرج لوني جذاب */
+        .message.sent { align-self: flex-start; }
+        .message.sent .message-content {
+            /* تدرج لوني أخضر يعطي طابع التطبيقات الحديثة */
+            background: linear-gradient(135deg, var(--primary), var(--primary2));
+            color: #ffffff;
+            /* انحناء دائري كبير من 3 اتجاهات وزاوية حادة من الأسفل للاتجاه المعاكس */
+            border-radius: 24px 24px 6px 24px;
+            border: none; /* إزالة الحد للاعتماد على الظل واللون */
+            box-shadow: 0 6px 15px rgba(16, 185, 129, 0.25); /* ظل أخضر خفيف يحيط بالرسالة */
+        }
+
+        .message .time {
+            font-size: 0.75rem;
+            margin-top: 6px;
+            color: #64748b; /* لون رمادي أغمق قليلاً لقراءة أفضل */
+            padding: 0 8px;
+            font-weight: 500;
+        }
+
+        .message.sent .time { text-align: left; }
+        .message.received .time { text-align: right; }
+
+        /* منطقة الإدخال السفلية */
+        .chat-input-area {
+            background: #ffffff;
+            padding: 15px 25px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #messageInput {
+            flex: 1;
+            background: #f1f5f9;
+            border: 1px solid transparent;
+            border-radius: 30px;
+            padding: 16px 24px;
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
+            color: #0f172a;
+        }
+
+        #messageInput:focus {
+            background: #ffffff;
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        /* زر الإرسال الدائري */
+        .send-btn-circle {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 52px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .send-btn-circle:hover {
+            background: var(--primary2);
+            transform: scale(1.05) rotate(-5deg);
+        }
+        
+        /* تعديل أزرار التحكم (الحذف) */
+        .msg-controls { margin-top: 5px; padding: 0 5px; display: flex; gap: 8px; justify-content: flex-start; }
+        .msg-controls button { background: none; border: none; font-size: 1rem; cursor: pointer; opacity: 0.6; transition: 0.2s; filter: grayscale(100%); }
+        .msg-controls button:hover { opacity: 1; filter: grayscale(0%); transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+    <div class="chat-wrapper">
+        <div class="chat-container">
+            <!-- الهيدر -->
+            <div class="chat-header">
+                <!-- زر الرجوع لقائمة المستخدمين -->
+                <button id="backBtn" class="back-btn" title="رجوع للقائمة" onclick="window.location.href='users.html'">
+                    <!-- سهم متجه لليمين مناسب للغة العربية (RTL) -->
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </button>
+
+                <div class="header-info">
+                    <div class="header-avatar" id="chatAvatar">؟</div>
+                    <h3 id="chatWith">جاري التحميل...</h3>
+                </div>
+                
+                <button id="logoutBtn" class="logout-btn">خروج</button>
+            </div>
+
+            <!-- منطقة الرسائل -->
+            <div class="chat-messages" id="chatMessages">
+                <!-- الرسائل ستظهر هنا بواسطة ملف chat.js -->
+            </div>
+
+            <!-- منطقة الإدخال -->
+            <form class="chat-input-area" id="chatForm">
+                <input type="text" id="messageInput" placeholder="اكتب رسالتك هنا..." required autocomplete="off">
+                <button type="submit" class="send-btn-circle" title="إرسال">
+                    <!-- أيقونة طائرة ورقية للإرسال -->
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: translateX(-2px) rotate(180deg);">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- مكتبة SignalR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    
+    <!-- ملفاتك -->
+    <script src="./js/config.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/chat.js"></script>
+
+    <!-- سكربت صغير ديناميكي لتحديث أول حرف في الأيقونة العلوية بناءً على الرابط -->
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetName = urlParams.get('name');
+        if (targetName) {
+            document.getElementById('chatAvatar').innerText = targetName.charAt(0).toUpperCase();
+        }
+    </script>
+</body>
+</html>
