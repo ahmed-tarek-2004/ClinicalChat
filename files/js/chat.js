@@ -125,16 +125,50 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // استقبال الرسائل
     connection.on("ReceiveMessage", (messageData) => {
-        const senderId = (messageData.sender && messageData.sender.id) ? messageData.sender.id :
-            (messageData.Sender && messageData.Sender.Id) ? messageData.Sender.Id : null;
 
-        const messageText = messageData.content || messageData.Content;
-        const msgId = messageData.id || messageData.Id;
-        const sentAt = messageData.sentAt || messageData.SentAt;
+        const senderId =
+            messageData.senderId ??
+            messageData.SenderId ??
+            messageData.sender?.id ??
+            messageData.Sender?.Id;
 
-        // if (senderId !== currentUser.id) {
-        appendMessage(messageText, false, msgId, sentAt);
-        // }
+        const receiverId =
+            messageData.receiverId ??
+            messageData.ReceiverId ??
+            messageData.recieverId ??
+            messageData.RecieverId;
+
+        const messageText =
+            messageData.message ??
+            messageData.Message ??
+            messageData.content ??
+            messageData.Content;
+
+        const messageId =
+            messageData.messageId ??
+            messageData.MessageId ??
+            messageData.id ??
+            messageData.Id;
+
+        const sentAt =
+            messageData.sentAt ??
+            messageData.SentAt;
+
+        // الرسالة ليست لهذه المحادثة
+        const isCurrentChat =
+            (senderId === currentUser.id && receiverId === targetUserId) ||
+            (senderId === targetUserId && receiverId === currentUser.id);
+
+        if (!isCurrentChat)
+            return;
+
+        appendMessage(
+            messageText,
+            senderId === currentUser.id,
+            messageId,
+            sentAt
+        );
+
     });
 
     // استقبال حدث الحذف من الطرف الآخر
@@ -158,32 +192,49 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 7. إرسال رسالة
     chatForm.addEventListener("submit", async (e) => {
+
         e.preventDefault();
+
         const text = messageInput.value.trim();
 
-
-        if (!text || !targetUserId) return;
+        if (!text || !targetUserId)
+            return;
 
         messageInput.value = "";
 
-        // عرض الرسالة محلياً فوراً (بدون ID حالياً حتى يأتي الرد من السيرفر)
-        appendMessage(text, true);
-        console.log("إرسال رسالة:", text, "إلى:", targetUserId);
         try {
-            console.log("Invoking sendmessage with text:", text, "and targetUserId:", targetUserId);
-            await connection.invoke("sendmessage", text, targetUserId);
-            console.log("end");
+
+            await connection.invoke(
+                "SendMessage",
+                text,
+                targetUserId
+            );
 
         } catch (err) {
+
             console.error("خطأ في إرسال الرسالة:", err);
-            appendMessage("⚠️ فشل الإرسال", false);
+            if (!isLoggingOut) {
+                alert("فشل إرسال الرسالة");
+            }
+
         }
+
     });
 
     // 8. تسجيل الخروج
-    logoutBtn.addEventListener("click", () => {
-        connection.stop();
+    logoutBtn.addEventListener("click", async () => {
+
+        isLoggingOut = true;
+
+        logoutBtn.disabled = true;
+
+        try {
+            await connection.stop();
+        } catch { }
+
         Auth.clearSession();
+
         window.location.href = "index.html";
+
     });
 });
