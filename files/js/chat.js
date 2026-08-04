@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         try {
-            await connection.invoke("DeleteMessage", messageId);
+            await connection.invoke("deletemessage", messageId,currentUser.id);
             messageElement.remove();
         } catch (err) {
             console.error("خطأ في حذف الرسالة:", err);
