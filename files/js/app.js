@@ -16,8 +16,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 const response = await Api.login(email, password);
 
                 if (response.succeeded) {
+                    // حفظ بيانات الجلسة في LocalStorage
                     Auth.setSession(response.data);
-                    window.location.href = "chat.html"; 
+                    
+                    // ==========================================
+                    // توجيه المستخدم بناءً على الإيميل (الصلاحية)
+                    // ==========================================
+                    const adminId = "44dc4beb-5b7d-467b-a124-5107f68d5f5d"; // الـ ID الخاص بالأدمن
+
+                    if (email.toLowerCase() === "admin@gmail.com") {
+                        // الأدمن يروح لصفحة كل المستخدمين
+                        window.location.href = "users.html"; 
+                    } else {
+                        // المستخدم العادي يروح مباشرة يكلم الصيدلية
+                        window.location.href = `chat.html?userId=${adminId}&name=${encodeURIComponent("الصيدلية")}`;
+                    }
+                    // ==========================================
+
                 } else {
                     alert("خطأ: " + response.message);
                     submitBtn.innerText = "دخول";

@@ -36,5 +36,9 @@ const Api = (() => {
     return request(`${ENDPOINTS.HISTORY}/${withUserId}`, { method: "GET" });
   }
 
-  return { login, getHistory };
+  function getUsers() {
+    return request(ENDPOINTS.USERS_LIST, { method: "GET" });
+  }
+
+  return { login, getHistory, getUsers };
 })();
