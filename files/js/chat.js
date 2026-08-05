@@ -118,9 +118,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     function appendMessage(text, isSent, messageId = null, timestamp = null, isDeleted = false) {
         if (emptyState) emptyState.style.display = 'none';
 
-        // لو أنا المرسل ومش أدمن والرسالة محذوفة: متعرضهاش عندي
-        if (isDeleted && isSent && !IS_ADMIN) return;
-
         const row = document.createElement("div");
         row.className = `message-row ${isSent ? "sent" : "received"}`;
 
@@ -146,7 +143,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         messageDiv.appendChild(contentSpan);
         messageDiv.appendChild(metaDiv);
 
-        // ====== الرسالة محذوفة (للمستقبل أو للأدمن) ======
+        // ====== الرسالة محذوفة (للمرسل أو المستقبل) ======
         if (isDeleted) {
             renderDeletedState(messageDiv, contentSpan, metaDiv);
         }
@@ -195,21 +192,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             try {
                 await connection.invoke("deletemessage", messageId, currentUser.id);
 
-                // عندي أنا (المرسل)
-                if (IS_ADMIN) {
-                    const contentSpan = messageElement.querySelector('.message-content');
-                    const metaDiv = messageElement.querySelector('.message-meta');
-                    renderDeletedState(messageElement, contentSpan, metaDiv);
-                    confirmDiv.remove();
-                } else {
-                    rowElement.style.transform = "translateX(20px)";
-                    rowElement.style.opacity = "0";
-                    setTimeout(() => {
-                        rowElement.remove();
-                        toggleEmptyState();
-                    }, 250);
-                }
-                // SignalR هيوصل للطرف التاني ويحولها لـ "محذوفة"
+                // ====== عند المرسل: حوّلها لـ "محذوفة" ======
+                const contentSpan = messageElement.querySelector('.message-content');
+                const metaDiv = messageElement.querySelector('.message-meta');
+                renderDeletedState(messageElement, contentSpan, metaDiv);
+                confirmDiv.remove();
+                // SignalR هيوصل للمستقبل ويحولها لـ "محذوفة" من هناك
             } catch (err) {
                 console.error("خطأ في حذف الرسالة:", err);
                 alert("فشل حذف الرسالة");
@@ -275,28 +263,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!msgRow) return;
 
         const messageDiv = msgRow.querySelector('.message');
-        const isSentByMe = messageDiv.classList.contains('sent');
 
-        if (isSentByMe) {
-            // أنا اللي مسحتها
-            if (IS_ADMIN) {
-                const contentSpan = messageDiv.querySelector('.message-content');
-                const metaDiv = messageDiv.querySelector('.message-meta');
-                renderDeletedState(messageDiv, contentSpan, metaDiv);
-            } else {
-                msgRow.style.transform = "translateX(20px)";
-                msgRow.style.opacity = "0";
-                setTimeout(() => {
-                    msgRow.remove();
-                    toggleEmptyState();
-                }, 250);
-            }
-        } else {
-            // الطرف التاني مسحها (أنا المستقبل) → أعرضها كـ "محذوفة"
-            const contentSpan = messageDiv.querySelector('.message-content');
-            const metaDiv = messageDiv.querySelector('.message-meta');
-            renderDeletedState(messageDiv, contentSpan, metaDiv);
-        }
+        // ====== الطرفين: حوّلها لـ "تم حذف هذه الرسالة" ======
+        const contentSpan = messageDiv.querySelector('.message-content');
+        const metaDiv = messageDiv.querySelector('.message-meta');
+        renderDeletedState(messageDiv, contentSpan, metaDiv);
     });
 
     connection.on("GetOnlineUsers", (onlineUsers) => {
