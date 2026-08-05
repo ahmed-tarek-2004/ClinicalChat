@@ -3,24 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول</title>
+    <title>تسجيل الدخول | صيدليتك</title>
     <link rel="stylesheet" href="./css/style.css">
+    <style>
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-box {
+            width: 100%;
+            max-width: 420px;
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 48px 40px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-box::before {
+            content: "";
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: rgba(16,185,129,.06);
+            border-radius: 50%;
+            top: -100px;
+            right: -80px;
+        }
+        .login-logo {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--primary), var(--primary2));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: white;
+            box-shadow: 0 12px 24px rgba(16,185,129,.25);
+        }
+        .login-box h2 {
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 1.6rem;
+            color: #0f172a;
+        }
+        .login-subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+        }
+        .input-icon-wrap {
+            position: relative;
+        }
+        .input-icon-wrap svg {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #cbd5e1;
+            width: 20px;
+            height: 20px;
+            transition: 0.25s;
+        }
+        .input-icon-wrap input {
+            width: 100%;
+            height: 56px;
+            padding: 0 48px 0 18px;
+            border-radius: 14px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            color: #0f172a;
+            font-size: 1rem;
+            transition: 0.25s;
+            font-family: inherit;
+        }
+        .input-icon-wrap input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(16,185,129,.1);
+        }
+        .input-icon-wrap input:focus + svg {
+            color: var(--primary);
+        }
+        .input-icon-wrap input::placeholder {
+            color: #cbd5e1;
+        }
+        .btn-login {
+            width: 100%;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary), var(--primary2));
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(16,185,129,.25);
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(16,185,129,.35);
+        }
+        .btn-login:active {
+            transform: scale(0.98);
+        }
+        .btn-login:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
 </head>
 <body>
 
-    <div class="login-container">
-        <h2>تسجيل الدخول</h2>
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">البريد الإلكتروني</label>
-                <input type="email" id="email" required placeholder="user@example.com">
+    <div class="login-wrapper">
+        <div class="login-box">
+            <div class="login-logo">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
             </div>
-            <div class="form-group">
-                <label for="password">كلمة المرور</label>
-                <input type="password" id="password" required placeholder="********">
-            </div>
-            <button type="submit" class="btn">دخول</button>
-        </form>
+            <h2>تسجيل الدخول</h2>
+            <p class="login-subtitle">أهلاً بك في نظام الصيدلية</p>
+            
+            <form id="loginForm" style="display: flex; flex-direction: column; gap: 18px;">
+                <div class="input-icon-wrap">
+                    <input type="email" id="email" required placeholder="البريد الإلكتروني" autocomplete="email">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                </div>
+                
+                <div class="input-icon-wrap">
+                    <input type="password" id="password" required placeholder="كلمة المرور" autocomplete="current-password">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+                
+                <button type="submit" class="btn-login" id="loginBtn">
+                    دخول
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
     </div>
 
     <script src="./js/config.js"></script>

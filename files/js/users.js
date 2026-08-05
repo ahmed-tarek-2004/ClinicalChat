@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     const currentUser = JSON.parse(localStorage.getItem("user"));
 
-    // التحقق من الصلاحيات (الأدمن فقط)
     if (currentUser.email !== "admin@gmail.com") {
         console.warn("المستخدم الحالي ليس أدمن، سيتم إعادة توجيهه.");
         alert("غير مصرح لك بالوصول إلى هذه الصفحة.");
@@ -18,9 +17,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // ==========================================
-    // إعداد SignalR لجلب حالة المتصلين
-    // ==========================================
     const hubUrl = `${window.APP_CONFIG.API_BASE_URL}/messageHub`;
     const connection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
@@ -29,17 +25,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         .withAutomaticReconnect()
         .build();
 
-    // 1. الاستماع لحدث استقبال القائمة الكاملة للمتصلين عند فتح الصفحة
     connection.on("GetOnlineUsers", (onlineUsers) => {
-        console.log("البيانات اللي راجعة من السيرفر للمتصلين:", onlineUsers);
-        
-        // تصفير جميع الحالات أولاً لـ Offline
         document.querySelectorAll('.status-dot').forEach(dot => {
             dot.classList.remove('online');
             dot.title = "غير متصل";
         });
 
-        // تفعيل حالة الأونلاين للموجودين في القائمة
         if (onlineUsers && onlineUsers.length > 0) {
             onlineUsers.forEach(user => {
                 const userId = typeof user === 'object' ? user.id || user.Id : user;
@@ -52,9 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // 2. الاستماع اللحظي: عندما يصبح مستخدم أونلاين الآن
     connection.on("UserConnected", (onlineUserId) => {
-        console.log("يوزر دخل أونلاين:", onlineUserId);
         const userDot = document.getElementById(`status-${onlineUserId}`);
         if (userDot) {
             userDot.classList.add('online');
@@ -62,9 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // 3. الاستماع اللحظي: عندما يصبح مستخدم أوفلاين (خرج أو أغلق الاتصال)
     connection.on("UserDisconnected", (offlineUserId) => {
-        console.log("يوزر خرج أوفلاين:", offlineUserId);
         const userDot = document.getElementById(`status-${offlineUserId}`);
         if (userDot) {
             userDot.classList.remove('online');
@@ -73,7 +60,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     try {
-        // 1. جلب قائمة كل المستخدمين من الـ API ورسمهم في الشاشة
         const response = await Api.getUsers();
         const users = response.data || []; 
         
@@ -82,20 +68,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         const otherUsers = users.filter(u => u.id !== currentUser.id);
 
         if (otherUsers.length === 0) {
-            usersListContainer.innerHTML = "<p style='text-align:center; color:var(--muted);'>لا يوجد مستخدمين آخرين في النظام.</p>";
+            usersListContainer.innerHTML = "<p style='text-align:center; color:var(--muted); padding:40px;'>لا يوجد مستخدمين آخرين في النظام.</p>";
             return;
         }
 
         otherUsers.forEach(u => {
             const userRow = document.createElement("div");
-            userRow.className = "user-row user-card";
+            userRow.className = "user-card";
             
             const displayName = u.userName || "مستخدم غير معروف";
-            const displayEmail = u.email ? `<div class="user-row-sub">${u.email}</div>` : "";
-
+            const initial = displayName.charAt(0).toUpperCase();
+            
             const avatarContent = (u.profileUrl && u.profileUrl.trim() !== "") 
                 ? `<img src="${u.profileUrl}" alt="${displayName}" class="avatar-img" />`
-                : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="default-avatar"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+                : `<span>${initial}</span>`;
 
             userRow.innerHTML = `
                 <div class="avatar-container">
@@ -106,10 +92,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </div>
                 <div class="user-row-info">
                     <div class="user-row-name">${displayName}</div>
-                    ${displayEmail}
+                    ${u.email ? `<div class="user-row-sub">${u.email}</div>` : ""}
                 </div>
                 <div class="chat-action-icon">
-                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
                 </div>
             `;
 
@@ -120,20 +108,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             usersListContainer.appendChild(userRow);
         });
 
-        // 2. بعد رسم الشاشة بنجاح، نبدأ اتصال SignalR
         await connection.start();
         console.log("تم الاتصال بـ SignalR لمعرفة المتصلين");
-        
-        // 3. استدعاء الدالة المخصصة في الخادم لجلب بيانات الأونلاين المبدئية
         await connection.invoke("onlineusers", currentUser.id);
 
     } catch (error) {
         console.error("حدث خطأ:", error);
         if (error.status === 403 || error.status === 401) {
-            usersListContainer.innerHTML = "<p style='color:red; text-align:center;'>ليس لديك صلاحية لطلب هذه البيانات من الخادم.</p>";
+            usersListContainer.innerHTML = "<p style='color:red; text-align:center; padding:40px;'>ليس لديك صلاحية لطلب هذه البيانات من الخادم.</p>";
         } else {
             if(usersListContainer.innerHTML === "") {
-                usersListContainer.innerHTML = "<p style='color:red; text-align:center;'>حدث خطأ أثناء تحميل القائمة.</p>";
+                usersListContainer.innerHTML = "<p style='color:red; text-align:center; padding:40px;'>حدث خطأ أثناء تحميل القائمة.</p>";
             }
         }
     }
